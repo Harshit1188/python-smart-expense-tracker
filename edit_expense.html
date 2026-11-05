@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Edit Expense | Smart Expense Tracker</title>
+
+    <link rel="stylesheet"
+
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body class="auth-page">
+
+    <div class="auth-card edit-card">
+
+        <a href="{{ url_for('dashboard') }}" class="back-link">
+
+            ← Back to Dashboard
+
+        </a>
+
+        <h1>Edit Expense</h1>
+
+        <p class="muted">Update your expense details</p>
+
+        <form method="POST" class="form-stack">
+
+            <label>
+
+                Expense Name
+
+                <input type="text"
+
+                       name="title"
+
+                       value="{{ expense.title }}"
+
+                       required>
+
+            </label>
+
+            <label>
+
+                Category
+
+                <select name="category" required>
+
+                    {% for category in categories %}
+
+                    <option value="{{ category }}"
+
+                        {% if expense.category == category %}
+
+                        selected
+
+                        {% endif %}>
+
+                        {{ category }}
+
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </label>
+
+            <label>
+
+                Amount (₹)
+
+                <input type="number"
+
+                       name="amount"
+
+                       step="0.01"
+
+                       min="0.01"
+
+                       value="{{ expense.amount }}"
+
+                       required>
+
+            </label>
+
+            <label>
+
+                Date
+
+                <input type="date"
+
+                       name="expense_date"
+
+                       value="{{ expense.expense_date }}"
+
+                       required>
+
+            </label>
+
+            <button type="submit" class="btn primary full">
+
+                Save Changes
+
+            </button>
+
+        </form>
+
+    </div>
+
+</body>
+
+</html>

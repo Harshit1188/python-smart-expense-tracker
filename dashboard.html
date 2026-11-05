@@ -1,0 +1,667 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Smart Expense Tracker</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="topbar">
+
+        <div class="brand">
+            <div class="brand-mark">₹</div>
+            <span>Smart Expense Tracker</span>
+        </div>
+
+        <div class="top-actions">
+
+            <span class="welcome">
+                Welcome, {{ session.user }}
+            </span>
+
+            <button id="themeToggle" class="btn secondary" type="button">
+                🌙 Dark Mode
+            </button>
+
+            <a href="{{ url_for('logout') }}" class="btn logout">
+                Logout
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <main class="container">
+
+        <!-- PAGE HEADING -->
+        <section class="page-heading">
+
+            <div>
+                <p class="eyebrow">FINANCIAL OVERVIEW</p>
+
+                <h1>Dashboard</h1>
+
+                <p class="muted">
+                    Manage your money smarter, every day.
+                </p>
+            </div>
+
+            <form method="GET"
+                  action="{{ url_for('dashboard') }}"
+                  class="month-picker">
+
+                <label for="month">Select month</label>
+
+                <input type="month"
+                       id="month"
+                       name="month"
+                       value="{{ selected_month }}">
+
+                <button type="submit" class="btn primary">
+                    View
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- STATISTICS -->
+        <section class="stats-grid">
+
+            <div class="stat-card">
+
+                <div class="stat-icon blue">₹</div>
+
+                <p class="stat-label">All-Time Expenses</p>
+
+                <h2>₹{{ "%.2f"|format(total) }}</h2>
+
+                <span class="stat-foot">
+                    Total recorded spending
+                </span>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon purple">📊</div>
+
+                <p class="stat-label">Monthly Expenses</p>
+
+                <h2>₹{{ "%.2f"|format(monthly_total) }}</h2>
+
+                <span class="stat-foot">
+                    {{ selected_month }}
+                </span>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon green">💰</div>
+
+                <p class="stat-label">Remaining Budget</p>
+
+                <h2>₹{{ "%.2f"|format(remaining) }}</h2>
+
+                <span class="stat-foot">
+                    For selected month
+                </span>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon orange">📈</div>
+
+                <p class="stat-label">Highest Category</p>
+
+                <h2>
+                    {% if highest_category %}
+                        {{ highest_category.category }}
+                    {% else %}
+                        None
+                    {% endif %}
+                </h2>
+
+                <span class="stat-foot">
+                    Top spending category
+                </span>
+
+            </div>
+
+        </section>
+
+
+        <!-- BUDGET AND INSIGHTS -->
+        <section class="two-column">
+
+            <!-- MONTHLY BUDGET -->
+            <div class="panel">
+
+                <div class="panel-heading">
+
+                    <h2>🎯 Monthly Budget Planner</h2>
+
+                    <span class="pill">Budget</span>
+
+                </div>
+
+                <p class="muted small">
+                    Set your spending limit for {{ selected_month }}.
+                </p>
+
+
+                <form method="POST"
+                      action="{{ url_for('set_budget') }}"
+                      class="budget-form">
+
+                    <input type="hidden"
+                           name="month"
+                           value="{{ selected_month }}">
+
+                    <label>
+                        Monthly budget (₹)
+
+                        <input type="number"
+                               name="budget"
+                               min="1"
+                               step="0.01"
+                               placeholder="Enter budget"
+                               value="{{ budget if budget > 0 else '' }}"
+                               required>
+                    </label>
+
+                    <button type="submit" class="btn primary">
+                        Save Budget
+                    </button>
+
+                </form>
+
+
+                <div class="progress-meta">
+
+                    <span>Budget used</span>
+
+                    <b>
+                        {{ "%.1f"|format(budget_percentage) }}%
+                    </b>
+
+                </div>
+
+
+                <!-- CORRECTED BUDGET PROGRESS BAR -->
+                <div class="progress-track">
+
+                    <div
+                        id="budgetProgress"
+                        class="progress-fill"
+                        data-spent="{{ monthly_total }}"
+                        data-budget="{{ budget }}">
+                    </div>
+
+                </div>
+
+
+                <div class="progress-meta">
+
+                    <span>
+                        Spent: ₹{{ "%.2f"|format(monthly_total) }}
+                    </span>
+
+                    <span>
+                        Budget: ₹{{ "%.2f"|format(budget) }}
+                    </span>
+
+                </div>
+
+
+                {% if budget > 0 and monthly_total > budget %}
+
+                    <p style="color:#dc5363;font-weight:bold;">
+                        ⚠️ You have exceeded your budget!
+                    </p>
+
+                {% elif budget > 0 %}
+
+                    <p style="color:#159b72;font-weight:bold;">
+                        ✓ You are within your budget.
+                    </p>
+
+                {% else %}
+
+                    <p class="muted small">
+                        Set a monthly budget to track your spending.
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- SMART INSIGHTS -->
+            <div class="panel insights-panel">
+
+                <div class="panel-heading">
+
+                    <h2>✨ Smart Spending Insights</h2>
+
+                    <span class="pill">Insights</span>
+
+                </div>
+
+
+                {% for insight in insights %}
+
+                    <div class="insight-item">
+
+                        <span class="insight-dot"></span>
+
+                        <p>{{ insight }}</p>
+
+                    </div>
+
+                {% else %}
+
+                    <p class="muted small">
+                        Add expenses to receive spending insights.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+
+        <!-- CHARTS -->
+        <section class="two-column">
+
+            <!-- CATEGORY CHART -->
+            <div class="panel">
+
+                <div class="panel-heading">
+
+                    <h2>📊 Category Breakdown</h2>
+
+                </div>
+
+                <div class="chart-wrap">
+
+                    <canvas
+                        id="categoryChart"
+                        data-labels='{{ category_names|tojson }}'
+                        data-values='{{ category_values|tojson }}'>
+                    </canvas>
+
+                </div>
+
+            </div>
+
+
+            <!-- MONTHLY CHART -->
+            <div class="panel">
+
+                <div class="panel-heading">
+
+                    <h2>📈 Monthly Spending Trend</h2>
+
+                </div>
+
+                <div class="chart-wrap">
+
+                    <canvas
+                        id="monthlyChart"
+                        data-labels='{{ monthly_labels|tojson }}'
+                        data-values='{{ monthly_values|tojson }}'>
+                    </canvas>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ADD NEW EXPENSE -->
+        <section class="panel">
+
+            <div class="panel-heading">
+
+                <h2>➕ Add New Expense</h2>
+
+                <span class="pill">New Transaction</span>
+
+            </div>
+
+
+            <form method="POST"
+                  action="{{ url_for('add') }}"
+                  id="expenseForm"
+                  class="expense-form">
+
+                <label>
+                    Expense Name
+
+                    <input type="text"
+                           name="title"
+                           placeholder="e.g. Grocery shopping"
+                           required>
+                </label>
+
+
+                <label>
+                    Category
+
+                    <select name="category" required>
+
+                        <option value="">Select category</option>
+
+                        {% for category in [
+                            'Shopping',
+                            'Education',
+                            'Travel',
+                            'Healthcare',
+                            'Entertainment',
+                            'Food',
+                            'Bills',
+                            'Other'
+                        ] %}
+
+                            <option value="{{ category }}">
+                                {{ category }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </label>
+
+
+                <label>
+                    Amount (₹)
+
+                    <input type="number"
+                           name="amount"
+                           placeholder="0.00"
+                           min="0.01"
+                           step="0.01"
+                           required>
+                </label>
+
+
+                <label>
+                    Date
+
+                    <input type="date"
+                           name="expense_date"
+                           value="{{ selected_month }}-01"
+                           required>
+                </label>
+
+
+                <button type="submit"
+                        class="btn primary add-button">
+
+                    Add Expense
+
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- SEARCH AND FILTER -->
+        <section class="panel">
+
+            <div class="panel-heading">
+
+                <h2>🔎 Search & Filter Expenses</h2>
+
+            </div>
+
+
+            <form method="GET"
+                  action="{{ url_for('dashboard') }}"
+                  class="filter-form">
+
+                <input type="hidden"
+                       name="month"
+                       value="{{ selected_month }}">
+
+
+                <!-- SEARCH -->
+                <label class="search-field">
+
+                    <span>⌕</span>
+
+                    <input
+                        type="text"
+                        id="expenseSearch"
+                        name="q"
+                        value="{{ search }}"
+                        placeholder="Search expense name...">
+
+                </label>
+
+
+                <!-- CATEGORY FILTER -->
+                <label>
+
+                    Category
+
+                    <select name="category">
+
+                        <option value="">All Categories</option>
+
+                        {% for category in available_categories %}
+
+                            <option
+                                value="{{ category.category }}"
+                                {% if selected_category == category.category %}
+                                    selected
+                                {% endif %}>
+
+                                {{ category.category }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </label>
+
+
+                <!-- START DATE -->
+                <label>
+
+                    From
+
+                    <input
+                        type="date"
+                        name="start_date"
+                        value="{{ start_date }}">
+
+                </label>
+
+
+                <!-- END DATE -->
+                <label>
+
+                    To
+
+                    <input
+                        type="date"
+                        name="end_date"
+                        value="{{ end_date }}">
+
+                </label>
+
+
+                <button class="btn primary" type="submit">
+                    Apply Filters
+                </button>
+
+
+                <a href="{{ url_for('dashboard', month=selected_month) }}"
+                   class="btn secondary">
+
+                    Reset
+
+                </a>
+
+            </form>
+
+
+            <!-- EXPENSE HISTORY -->
+            <div class="panel-heading">
+
+                <h2>📋 Expense History</h2>
+
+                <span class="pill">
+                    {{ expenses|length }} Records
+                </span>
+
+            </div>
+
+
+            <div class="table-wrap">
+
+                <table id="expenseTable">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Expense</th>
+                            <th>Category</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Actions</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for expense in expenses %}
+
+                            <tr>
+
+                                <td class="expense-title">
+                                    {{ expense.title }}
+                                </td>
+
+
+                                <td>
+
+                                    <span class="category-tag">
+                                        {{ expense.category }}
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+                                    {{ expense.expense_date }}
+                                </td>
+
+
+                                <td class="amount">
+                                    ₹{{ "%.2f"|format(expense.amount) }}
+                                </td>
+
+
+                                <td>
+
+                                    <div class="actions">
+
+                                        <a
+                                            class="text-action"
+                                            href="{{ url_for('edit', id=expense.id) }}">
+
+                                            Edit
+
+                                        </a>
+
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('delete', id=expense.id) }}">
+
+                                            <button
+                                                type="submit"
+                                                class="text-action danger delete-btn">
+
+                                                Delete
+
+                                            </button>
+
+                                        </form>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        {% else %}
+
+                            <tr>
+
+                                <td colspan="5" class="empty-cell">
+
+                                    No expenses found for these filters.
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- FOOTER -->
+        <footer>
+
+            Smart Expense Tracker · Manage your money smarter.
+
+        </footer>
+
+    </main>
+
+
+    <!-- JAVASCRIPT -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+
+</html>
